@@ -7,8 +7,11 @@
 #include <filesystem>
 #include <iostream>
 #include <thread>
+#include <SDL2/SDL.h>
 
-Chip8::Chip8(size_t memory_start_offset) : memory_start_offset_(memory_start_offset) {
+Chip8::Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display) : 
+    memory_start_offset_(memory_start_offset),
+    display_(display) {
     /*
      * Hex sprites (0 - F). Programs may use these sprites as their font.
      * However, in practice, most games implement their own font.
@@ -35,7 +38,7 @@ Chip8::Chip8(size_t memory_start_offset) : memory_start_offset_(memory_start_off
     memset(&reg_, 0, sizeof(Register));
 }
 
-Chip8::Chip8() : Chip8(kMemoryStartOffsetDefault) {}
+Chip8::Chip8(const std::shared_ptr<IDisplay> &display) : Chip8(kMemoryStartOffsetDefault, display) {}
 
 void Chip8::load(const std::string &path) {
     std::cout << "Loading " << path << "\n";
@@ -165,20 +168,25 @@ void Chip8::setIndexRegister(uint16_t instruction) {
 }
 
 void Chip8::displayDraw(uint16_t instruction) {
+    uint8_t display_x_pos = static_cast<uint8_t>(instruction & 0x0F00);
+    uint8_t display_y_pos = static_cast<uint8_t>(instruction & 0x00F0);
     uint8_t bytes_to_read = static_cast<uint8_t>(instruction & 0x000F);
     std::vector<uint8_t>::const_iterator data_start = program_data_.begin() + reg_.I;
     std::vector<uint8_t>::const_iterator data_end = program_data_.begin() + reg_.I + bytes_to_read;
     // Adds 1 because the last position is not included [start, end)
     std::vector<uint8_t> loaded_data(data_start, data_end + 1);
 
-    for (size_t i = 0; i < loaded_data.size(); ++i) {
-        std::cout << " " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << int(loaded_data[i]);
+    // for (size_t i = 0; i < loaded_data.size(); ++i) {
+    //     std::cout << " " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << int(loaded_data[i]);
 
-        if (i != 0 && i % 63 == 0) {
-            std::cout << std::endl;
-        }
-    }
-    std::cout << std::endl;
+    //     if (i != 0 && i % 63 == 0) {
+    //         std::cout << std::endl;
+    //     }
+    // }
+    // std::cout << std::endl;
+
+    // TODO: try-catch
+    display_->draw(bytes_to_read, display_x_pos, display_y_pos);    
 }
 
 void Chip8::clearScreen(void) {
