@@ -13,7 +13,7 @@ include_directories(${SDL2_INCLUDE_DIRS})
 
 add_executable(${CMAKE_PROJECT_NAME} 
                ../src/main.cpp
-               ../src/chip8.cpp
+               ../src/Chip8.cpp
                ../src/SdlDisplay.cpp)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 

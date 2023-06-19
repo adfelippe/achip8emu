@@ -1,4 +1,4 @@
-#include "chip8.hpp"
+#include "Chip8.hpp"
 
 #include <cstring>
 
@@ -61,8 +61,8 @@ void Chip8::load(const std::string &path) {
 
 void Chip8::run(void) {
     while (1) {
-        auto instruction = fetchInstruction();
-        decodeInstruction(instruction);
+        auto opcode = fetchInstruction();
+        decodeInstruction(opcode);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
@@ -102,75 +102,75 @@ void Chip8::buzzerOff(void) {}
 
 uint16_t Chip8::fetchInstruction(void) {
     // CHIP-8 opcodes are stored in big-endian
-    uint16_t instruction = ((static_cast<uint16_t>(program_data_[reg_.PC]) << 8) & 0xFF00) + program_data_[reg_.PC + 1];
+    uint16_t opcode = ((static_cast<uint16_t>(program_data_[reg_.PC]) << 8) & 0xFF00) + program_data_[reg_.PC + 1];
     reg_.PC += 2;
-    return instruction;
+    return opcode;
 }
 
-void Chip8::decodeInstruction(uint16_t instruction) {
-    std::cout << "Decoding: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << instruction << 
+void Chip8::decodeInstruction(uint16_t opcode) {
+    std::cout << "Decoding: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << opcode << 
         std::endl;
 
-    if (instruction == kClearScreen) {
+    if (opcode == kClearScreen) {
         clearScreen();
         return;
     }
 
-    switch (instruction & 0xF000) {
+    switch (opcode & 0xF000) {
         case kJump:
-            jump(instruction);
+            jump(opcode);
             break;
         case kSetVxReg:
-            setVxRegister(instruction);
+            setVxRegister(opcode);
             break;
         case kAddValueToVxReg:
-            addValueToVxRegister(instruction);
+            addValueToVxRegister(opcode);
             break;
         case kSetIndexRegI:
-            setIndexRegister(instruction);
+            setIndexRegister(opcode);
             break;
         case kDisplayDraw:
-            displayDraw(instruction);
+            displayDraw(opcode);
             break;
         default:
-            std::cerr << "Unknown instruction: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
-                << instruction << std::endl;
+            std::cerr << "Unknown opcode: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
+                << opcode << std::endl;
             break;
     }
 }
 
-void Chip8::jump(uint16_t instruction) {
-    reg_.PC = instruction & 0x0FFF;
+void Chip8::jump(uint16_t opcode) {
+    reg_.PC = opcode & 0x0FFF;
     std::cout << "Jump to 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << reg_.PC << 
         std::endl;
 }
 
-void Chip8::setVxRegister(uint16_t instruction) {
-    uint8_t v_reg = static_cast<uint8_t>(((instruction & 0x0F00) >> 8));
-    reg_.V[v_reg] = static_cast<uint8_t>(instruction & 0x00FF);
+void Chip8::setVxRegister(uint16_t opcode) {
+    uint8_t v_reg = static_cast<uint8_t>(((opcode & 0x0F00) >> 8));
+    reg_.V[v_reg] = static_cast<uint8_t>(opcode & 0x00FF);
     std::cout << "Set V[" << std::setw(1) << std::hex << std::uppercase << int(v_reg) << "] = " << 
         std::setfill('0') << std::setw(2) << std::hex << std::uppercase << int(reg_.V[v_reg]) << std::endl;
 }
 
 
-void Chip8::addValueToVxRegister(uint16_t instruction) {
-    uint8_t v_reg = static_cast<uint8_t>(((instruction &0x0F00) >> 8));
-    reg_.V[v_reg] += static_cast<uint8_t>(instruction & 0x00FF);
+void Chip8::addValueToVxRegister(uint16_t opcode) {
+    uint8_t v_reg = static_cast<uint8_t>(((opcode &0x0F00) >> 8));
+    reg_.V[v_reg] += static_cast<uint8_t>(opcode & 0x00FF);
     std::cout << "Add " << std::setfill('0') << std::setw(2) << std::hex << std::uppercase << 
-        int(static_cast<uint8_t>(instruction & 0x00FF)) << " to V[" << std::setw(1) << std::hex << std::uppercase 
+        int(static_cast<uint8_t>(opcode & 0x00FF)) << " to V[" << std::setw(1) << std::hex << std::uppercase 
         << int(v_reg) << "]\n";
 }
 
-void Chip8::setIndexRegister(uint16_t instruction) {
-    reg_.I = (instruction & 0x0FFF);
+void Chip8::setIndexRegister(uint16_t opcode) {
+    reg_.I = (opcode & 0x0FFF);
     std::cout << "I = 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << reg_.I << 
         std::endl;
 }
 
-void Chip8::displayDraw(uint16_t instruction) {
-    uint8_t display_x_pos = static_cast<uint8_t>(instruction & 0x0F00);
-    uint8_t display_y_pos = static_cast<uint8_t>(instruction & 0x00F0);
-    uint8_t bytes_to_read = static_cast<uint8_t>(instruction & 0x000F);
+void Chip8::displayDraw(uint16_t opcode) {
+    uint8_t display_x_pos = static_cast<uint8_t>(opcode & 0x0F00);
+    uint8_t display_y_pos = static_cast<uint8_t>(opcode & 0x00F0);
+    uint8_t bytes_to_read = static_cast<uint8_t>(opcode & 0x000F);
     std::vector<uint8_t>::const_iterator data_start = program_data_.begin() + reg_.I;
     std::vector<uint8_t>::const_iterator data_end = program_data_.begin() + reg_.I + bytes_to_read;
     // Adds 1 because the last position is not included [start, end)

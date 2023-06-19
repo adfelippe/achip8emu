@@ -42,12 +42,12 @@ private:
     void buzzerOn(void);
     void buzzerOff(void);
     uint16_t fetchInstruction(void);
-    void decodeInstruction(uint16_t instruction);
-    void jump(uint16_t instruction);
-    void setVxRegister(uint16_t instruction);
-    void addValueToVxRegister(uint16_t instruction);
-    void setIndexRegister(uint16_t instruction);
-    void displayDraw(uint16_t instruction);
+    void decodeInstruction(uint16_t opcode);
+    void jump(uint16_t opcode);
+    void setVxRegister(uint16_t opcode);
+    void addValueToVxRegister(uint16_t opcode);
+    void setIndexRegister(uint16_t opcode);
+    void displayDraw(uint16_t opcode);
     void clearScreen(void);
 
     // CHIP-8 Registers
