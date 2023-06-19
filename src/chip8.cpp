@@ -8,7 +8,7 @@
 #include <iostream>
 #include <thread>
 
-Chip8::Chip8() {
+Chip8::Chip8(size_t memory_start_offset) : memory_start_offset_(memory_start_offset) {
     /*
      * Hex sprites (0 - F). Programs may use these sprites as their font.
      * However, in practice, most games implement their own font.
@@ -35,6 +35,8 @@ Chip8::Chip8() {
     memset(&reg_, 0, sizeof(Register));
 }
 
+Chip8::Chip8() : Chip8(kMemoryStartOffsetDefault) {}
+
 void Chip8::load(const std::string &path) {
     std::cout << "Loading " << path << "\n";
 
@@ -48,8 +50,8 @@ void Chip8::load(const std::string &path) {
     std::filesystem::path file_path = path;
     auto file_size = std::filesystem::file_size(file_path);
     program_data_.reserve(file_size);
-    f.read(reinterpret_cast<char *>(program_data_.data() + kMemoryStartOffset), file_size);
-    reg_.PC = kMemoryStartOffset;
+    f.read(reinterpret_cast<char *>(program_data_.data() + memory_start_offset_), file_size);
+    reg_.PC = memory_start_offset_;
     std::cout << file_size << " bytes loaded successfully\n";
     f.close();
 }

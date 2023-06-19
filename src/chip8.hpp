@@ -12,6 +12,8 @@ public:
         const char* what() const throw() { return "Failed to load program data from file"; }
     };
 
+    Chip8(size_t memory_start_offset);
+    // Default memory start offset used (0x200)
     Chip8();
     virtual ~Chip8() {}
 
@@ -64,7 +66,7 @@ private:
     static constexpr size_t kDisplaySize = 64 * 32;
     // CHIP-8 memory is 4 KB
     static constexpr size_t kMemorySize = 4096;
-    static constexpr size_t kMemoryStartOffset = 0x200;
+    static constexpr size_t kMemoryStartOffsetDefault = 0x200;
     static constexpr uint8_t kSpritesMemLocation = 0x00;
     // 60 Hz = 16.666667 ms (period)
     static constexpr double kTimersDecrementRateMs = 16.666667F;
@@ -72,5 +74,6 @@ private:
     Register reg_;
     uint8_t memory_[kMemorySize];
     std::vector<uint8_t> program_data_;
+    size_t memory_start_offset_;
 };
         
