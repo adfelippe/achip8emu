@@ -9,15 +9,18 @@
 #include <thread>
 #include <SDL2/SDL.h>
 
+using namespace std::chrono_literals;
+
 Chip8::Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display) : 
     memory_start_offset_(memory_start_offset),
     display_(display) {
+    std::memset(memory_, 0, kMemorySize * sizeof(uint8_t));
     /*
      * Hex sprites (0 - F). Programs may use these sprites as their font.
      * However, in practice, most games implement their own font.
      * They must be stored in the first 512 bytes of the memory.
      */ 
-    const uint8_t hex_sprites[] = {0xF0, 0x90, 0x90, 0x90, 0xF0,    // 0
+const uint8_t hex_sprites[] = {0xF0, 0x90, 0x90, 0x90, 0xF0,    // 0
                                    0x20, 0x60, 0x20, 0x20, 0x70,    // 1
                                    0xF0, 0x10, 0xF0, 0x80, 0xF0,    // 2
                                    0xF0, 0x10, 0xF0, 0x10, 0xF0,    // 3
@@ -34,8 +37,9 @@ Chip8::Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &displa
                                    0xF0, 0x80, 0xF0, 0x80, 0xF0,    // E
                                    0xF0, 0x80, 0xF0, 0x80, 0x80};   // F
     // Data initialization                                   
-    memcpy(&memory_[kSpritesMemLocation], hex_sprites, sizeof(hex_sprites));
-    memset(&reg_, 0, sizeof(Register));
+    std::memcpy(&memory_[kSpritesMemLocation], hex_sprites, sizeof(hex_sprites));
+    std::memset(&reg_, 0, sizeof(Register));
+    std::memset(screen_buffer_, 0, sizeof(screen_buffer_));
 }
 
 Chip8::Chip8(const std::shared_ptr<IDisplay> &display) : Chip8(kMemoryStartOffsetDefault, display) {}
@@ -47,23 +51,33 @@ void Chip8::load(const std::string &path) {
     f.open(path.c_str(), (std::ios::in | std::ios::binary));
 
     if (!f.good()) {
-        throw LoadFileException();
+        throw Chip8Exception("Failed to load file " + path);
     }
 
+    // TODO: Add check to avoid a program larger than memory to cause overflow
     std::filesystem::path file_path = path;
     auto file_size = std::filesystem::file_size(file_path);
-    program_data_.reserve(file_size);
-    f.read(reinterpret_cast<char *>(program_data_.data() + memory_start_offset_), file_size);
     reg_.PC = memory_start_offset_;
+    f.read((char*)&memory_[memory_start_offset_], file_size);
     std::cout << file_size << " bytes loaded successfully\n";
     f.close();
 }
 
 void Chip8::run(void) {
+    auto start_time = std::chrono::steady_clock::now();
+
     while (1) {
+        auto start_delay = std::chrono::steady_clock::now();
         auto opcode = fetchInstruction();
         decodeInstruction(opcode);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start_time).count() > 6000) {
+            break;
+        }
+
+        // 60 Hz refresh rate
+        std::this_thread::sleep_until(start_delay + 17ms);
     }
 }
 
@@ -102,7 +116,7 @@ void Chip8::buzzerOff(void) {}
 
 uint16_t Chip8::fetchInstruction(void) {
     // CHIP-8 opcodes are stored in big-endian
-    uint16_t opcode = ((static_cast<uint16_t>(program_data_[reg_.PC]) << 8) & 0xFF00) + program_data_[reg_.PC + 1];
+    uint16_t opcode = ((static_cast<uint16_t>(memory_[reg_.PC]) << 8) & 0xFF00) + memory_[reg_.PC + 1];
     reg_.PC += 2;
     return opcode;
 }
@@ -168,27 +182,46 @@ void Chip8::setIndexRegister(uint16_t opcode) {
 }
 
 void Chip8::displayDraw(uint16_t opcode) {
-    uint8_t display_x_pos = static_cast<uint8_t>(opcode & 0x0F00);
-    uint8_t display_y_pos = static_cast<uint8_t>(opcode & 0x00F0);
+    uint8_t vx_pos = static_cast<uint8_t>((opcode & 0x0F00) >> 8);
+    uint8_t display_x_pos = reg_.V[vx_pos] % kDisplayWidth;
+    uint8_t vy_pos = static_cast<uint8_t>((opcode & 0x00F0) >> 4);
+    uint8_t display_y_pos = reg_.V[vy_pos] % kDisplayHeight;
     uint8_t bytes_to_read = static_cast<uint8_t>(opcode & 0x000F);
-    std::vector<uint8_t>::const_iterator data_start = program_data_.begin() + reg_.I;
-    std::vector<uint8_t>::const_iterator data_end = program_data_.begin() + reg_.I + bytes_to_read;
-    // Adds 1 because the last position is not included [start, end)
-    std::vector<uint8_t> loaded_data(data_start, data_end + 1);
+    auto start_x_pos = display_x_pos;
+    reg_.V[0xF] = 0x00;
 
-    // for (size_t i = 0; i < loaded_data.size(); ++i) {
-    //     std::cout << " " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << int(loaded_data[i]);
+    // TODO: Implement the correct logic
+    // We update our screen buffer before actually drawing + rendering
+    for(uint32_t i = 0; i < bytes_to_read; ++i) {
+        if (display_y_pos >= kDisplayHeight) {
+            break;
+        }
 
-    //     if (i != 0 && i % 63 == 0) {
-    //         std::cout << std::endl;
-    //     }
-    // }
-    // std::cout << std::endl;
+        display_x_pos = start_x_pos;
+        const auto &display_data = memory_[reg_.I + i];
+        for (int8_t j = 7; j >= 0; --j) {
+            if (display_x_pos >= kDisplayWidth) {
+                break;
+            }
 
-    // TODO: try-catch
-    display_->draw(bytes_to_read, display_x_pos, display_y_pos);    
+            const uint8_t &sprite_pixel = (display_data >> j) & 0x01;
+            // (Y position * display width) walks the pointer on the vertical line
+            auto *screen_buf_pixel = &screen_buffer_[display_x_pos + display_y_pos * kDisplayWidth];
+            if (sprite_pixel && *screen_buf_pixel) {
+                reg_.V[0xF] = 0x01;
+            }
+
+            *screen_buf_pixel ^= sprite_pixel;
+            ++display_x_pos;
+        }
+          ++display_y_pos;
+    }
+
+    display_->render(screen_buffer_);
 }
 
 void Chip8::clearScreen(void) {
     std::cout << "clearScreen called\n";
+    std::memset(screen_buffer_, 0, sizeof(screen_buffer_));
+    display_->clear();
 }

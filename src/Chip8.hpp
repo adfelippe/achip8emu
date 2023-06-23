@@ -10,8 +10,12 @@
 
 class Chip8 {
 public:
-    class LoadFileException: public std::exception {
-        const char* what() const throw() { return "Failed to load program data from file"; }
+    class Chip8Exception : public std::exception {
+    public:
+        Chip8Exception(const std::string &err_msg) : err_msg_(err_msg) {} 
+        const char* what() const throw() { return err_msg_.c_str(); }
+    private:
+        const std::string err_msg_;
     };
 
     Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display);
@@ -33,8 +37,8 @@ public:
     };
 
     // CHIP-8 display size if 64 x 32 pixels
-    static constexpr size_t kDisplaySizeX = 64;
-    static constexpr size_t kDisplaySizeY = 32;
+    static constexpr size_t kDisplayWidth = 64;
+    static constexpr size_t kDisplayHeight = 32;
 
 private:
     void runDelayTimer(void);
@@ -77,7 +81,7 @@ private:
 
     Register reg_;
     uint8_t memory_[kMemorySize];
-    std::vector<uint8_t> program_data_;
+    uint8_t screen_buffer_[kDisplayWidth * kDisplayHeight];
     size_t memory_start_offset_;
     std::shared_ptr<IDisplay> display_;
 };

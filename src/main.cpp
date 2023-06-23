@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     }
     
     std::shared_ptr<IDisplay> sdl_display = std::make_shared<SdlDisplay>();
-    sdl_display->initialize(Chip8::kDisplaySizeX, Chip8::kDisplaySizeY);
+    sdl_display->initialize(Chip8::kDisplayWidth, Chip8::kDisplayHeight);
     
     auto chip8 = Chip8(sdl_display);
     chip8.load(argv[1]);
