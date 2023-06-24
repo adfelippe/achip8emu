@@ -31,13 +31,13 @@ public:
     enum Instructions {
         kClearScreen = 0x00E0,
         kReturn = 0x00EE,
-        kJump = 0x1000,
-        kCall = 0x2000,
-        kSkipEqual = 0x3000,
-        kSetVxReg = 0x6000,
-        kAddValueToVxReg = 0x7000,
-        kSetIndexRegI = 0xA000,
-        kDisplayDraw = 0xD000
+        kJump = 0x1,
+        kCall = 0x2,
+        kSkipEqual = 0x3,
+        kSetVxReg = 0x6,
+        kAddValueToVxReg = 0x7,
+        kSetIndexRegI = 0xA,
+        kDisplayDraw = 0xD
     };
 
     // CHIP-8 display size if 64 x 32 pixels
@@ -52,13 +52,13 @@ private:
     uint16_t fetchInstruction(void);
     void decodeInstruction(uint16_t opcode);
     // Instructions
-    void jump(uint16_t opcode);
-    void callSubroutine(uint16_t opcode);
-    void skipIfEqual(uint16_t opcode);
-    void setVxRegister(uint16_t opcode);
-    void addValueToVxRegister(uint16_t opcode);
-    void setIndexRegister(uint16_t opcode);
-    void displayDraw(uint16_t opcode);
+    void jump(uint16_t address);
+    void callSubroutine(uint16_t address);
+    void skipIfEqual(uint8_t v_reg, uint8_t value);
+    void setVxRegister(uint8_t v_reg, uint8_t value);
+    void addValueToVxRegister(uint8_t v_reg, uint8_t value);
+    void setIndexRegister(uint16_t value);
+    void displayDraw(uint8_t x, uint8_t y, uint8_t n);
     void clearScreen(void);
     void returnFromSubroutine(void);
 

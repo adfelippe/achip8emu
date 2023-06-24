@@ -77,7 +77,7 @@ void Chip8::run(void) {
         decodeInstruction(opcode);
 
         if (std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start_time).count() > 6000) {
+                std::chrono::steady_clock::now() - start_time).count() > 5000) {
             break;
         }
 
@@ -127,9 +127,6 @@ uint16_t Chip8::fetchInstruction(void) {
 }
 
 void Chip8::decodeInstruction(uint16_t opcode) {
-    std::cout << "Decoding: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << opcode << 
-        std::endl;
-
     if (opcode == kClearScreen) {
         clearScreen();
         return;
@@ -137,89 +134,89 @@ void Chip8::decodeInstruction(uint16_t opcode) {
 
     if (opcode == kReturn) {
         returnFromSubroutine();
+        return;
     }
 
-    switch (opcode & 0xF000) {
+    uint8_t x = static_cast<uint8_t>((opcode >> 8) & 0x000F);
+    uint8_t y = static_cast<uint8_t>((opcode >> 4) & 0x000F);
+    uint8_t kk = static_cast<uint8_t>(opcode & 0x00FF);
+    uint16_t nnn = opcode & 0x0FFF;
+    uint8_t n = static_cast<uint8_t>(opcode & 0x000F);
+
+    std::cout << "OPCODE [" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << opcode << "]";
+    std::cout << ", x = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(x);
+    std::cout << ", y = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(y);
+    std::cout << ", kk = " << std::setfill('0') << std::setw(2) << std::hex << std::uppercase << int(kk);
+    std::cout << ", nnn = " << std::setfill('0') << std::setw(3) << std::hex << std::uppercase << int(nnn);
+    std::cout << ", n = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(n) << "\n";
+
+    switch ((opcode >> 12) & 0x000F) {
         case kJump:
-            jump(opcode);
+            jump(nnn);
             break;
         case kCall:
-            callSubroutine(opcode);
+            callSubroutine(nnn);
             break;
         case kSkipEqual:
-            skipIfEqual(opcode);
+            skipIfEqual(x, kk);
+            break;
         case kSetVxReg:
-            setVxRegister(opcode);
+            setVxRegister(x, kk);
             break;
         case kAddValueToVxReg:
-            addValueToVxRegister(opcode);
+            addValueToVxRegister(x, kk);
             break;
         case kSetIndexRegI:
-            setIndexRegister(opcode);
+            setIndexRegister(nnn);
             break;
         case kDisplayDraw:
-            displayDraw(opcode);
+            displayDraw(x, y, n);
             break;
         default:
-            std::cerr << "Unknown opcode: 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
-                << opcode << std::endl;
+            std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
+                << opcode << "\n";
             break;
     }
 }
 
-void Chip8::jump(uint16_t opcode) {
-    reg_.PC = opcode & 0x0FFF;
-    std::cout << "Jump to 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << reg_.PC << 
-        std::endl;
+void Chip8::jump(uint16_t address) {
+    reg_.PC = address;
 }
 
-void Chip8::callSubroutine(uint16_t opcode) {
+void Chip8::callSubroutine(uint16_t address) {
     ++reg_.SP;
     reg_.stack.push(reg_.PC);
-    reg_.PC = opcode & 0x0FFF;
+    reg_.PC = address;
 }
 
-void Chip8::skipIfEqual(uint16_t opcode) {
-    uint8_t v_reg = static_cast<uint8_t>(((opcode & 0x0F00) >> 8));
-    if (reg_.V[v_reg] == static_cast<uint8_t>(opcode & 0x00FF)) {
+void Chip8::skipIfEqual(uint8_t v_reg, uint8_t value) {
+    if (reg_.V[v_reg] == value) {
         reg_.PC += 2;
     }
 }
 
-void Chip8::setVxRegister(uint16_t opcode) {
-    uint8_t v_reg = static_cast<uint8_t>(((opcode & 0x0F00) >> 8));
-    reg_.V[v_reg] = static_cast<uint8_t>(opcode & 0x00FF);
-    std::cout << "Set V[" << std::setw(1) << std::hex << std::uppercase << int(v_reg) << "] = " << 
-        std::setfill('0') << std::setw(2) << std::hex << std::uppercase << int(reg_.V[v_reg]) << std::endl;
+void Chip8::setVxRegister(uint8_t v_reg, uint8_t value) {
+    reg_.V[v_reg] = value;
 }
 
 
-void Chip8::addValueToVxRegister(uint16_t opcode) {
-    uint8_t v_reg = static_cast<uint8_t>(((opcode &0x0F00) >> 8));
-    reg_.V[v_reg] += static_cast<uint8_t>(opcode & 0x00FF);
-    std::cout << "Add " << std::setfill('0') << std::setw(2) << std::hex << std::uppercase << 
-        int(static_cast<uint8_t>(opcode & 0x00FF)) << " to V[" << std::setw(1) << std::hex << std::uppercase 
-        << int(v_reg) << "]\n";
+void Chip8::addValueToVxRegister(uint8_t v_reg, uint8_t value) {
+    reg_.V[v_reg] += value;
 }
 
-void Chip8::setIndexRegister(uint16_t opcode) {
-    reg_.I = (opcode & 0x0FFF);
-    std::cout << "I = 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << reg_.I << 
-        std::endl;
+void Chip8::setIndexRegister(uint16_t value) {
+    reg_.I = value;
 }
 
-void Chip8::displayDraw(uint16_t opcode) {
-    uint8_t vx_pos = static_cast<uint8_t>((opcode & 0x0F00) >> 8);
-    uint8_t display_x_pos = reg_.V[vx_pos] % kDisplayWidth;
-    uint8_t vy_pos = static_cast<uint8_t>((opcode & 0x00F0) >> 4);
-    uint8_t display_y_pos = reg_.V[vy_pos] % kDisplayHeight;
-    uint8_t bytes_to_read = static_cast<uint8_t>(opcode & 0x000F);
+void Chip8::displayDraw(uint8_t x, uint8_t y, uint8_t n) {
+    uint8_t display_x_pos = reg_.V[x] % kDisplayWidth;
+    uint8_t display_y_pos = reg_.V[y] % kDisplayHeight;
     auto start_x_pos = display_x_pos;
     reg_.V[0xF] = 0x00;
 
-    // TODO: Implement the correct logic
+    // TODO: Rollover at the beginning if Vx or Vy is larger than screen size
     // We update our screen buffer before actually drawing + rendering
-    for(uint32_t i = 0; i < bytes_to_read; ++i) {
+    for(uint32_t i = 0; i < n; ++i) {
         if (display_y_pos >= kDisplayHeight) {
             break;
         }
@@ -248,7 +245,6 @@ void Chip8::displayDraw(uint16_t opcode) {
 }
 
 void Chip8::clearScreen(void) {
-    std::cout << "clearScreen called\n";
     std::memset(screen_buffer_, 0, sizeof(screen_buffer_));
     display_->clear();
 }
