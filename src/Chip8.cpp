@@ -38,8 +38,13 @@ const uint8_t hex_sprites[] = {0xF0, 0x90, 0x90, 0x90, 0xF0,    // 0
                                    0xF0, 0x80, 0xF0, 0x80, 0x80};   // F
     // Data initialization                                   
     std::memcpy(&memory_[kSpritesMemLocation], hex_sprites, sizeof(hex_sprites));
-    std::memset(&reg_, 0, sizeof(Register));
     std::memset(screen_buffer_, 0, sizeof(screen_buffer_));
+    std::memset(&reg_.V[0], 0, sizeof(reg_.V));
+    reg_.I = 0;
+    reg_.PC = 0;
+    reg_.SP = 0;
+    reg_.DT = 0;
+    reg_.ST = 0;
 }
 
 Chip8::Chip8(const std::shared_ptr<IDisplay> &display) : Chip8(kMemoryStartOffsetDefault, display) {}
@@ -130,10 +135,19 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         return;
     }
 
+    if (opcode == kReturn) {
+        returnFromSubroutine();
+    }
+
     switch (opcode & 0xF000) {
         case kJump:
             jump(opcode);
             break;
+        case kCall:
+            callSubroutine(opcode);
+            break;
+        case kSkipEqual:
+            skipIfEqual(opcode);
         case kSetVxReg:
             setVxRegister(opcode);
             break;
@@ -157,6 +171,19 @@ void Chip8::jump(uint16_t opcode) {
     reg_.PC = opcode & 0x0FFF;
     std::cout << "Jump to 0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << reg_.PC << 
         std::endl;
+}
+
+void Chip8::callSubroutine(uint16_t opcode) {
+    ++reg_.SP;
+    reg_.stack.push(reg_.PC);
+    reg_.PC = opcode & 0x0FFF;
+}
+
+void Chip8::skipIfEqual(uint16_t opcode) {
+    uint8_t v_reg = static_cast<uint8_t>(((opcode & 0x0F00) >> 8));
+    if (reg_.V[v_reg] == static_cast<uint8_t>(opcode & 0x00FF)) {
+        reg_.PC += 2;
+    }
 }
 
 void Chip8::setVxRegister(uint16_t opcode) {
@@ -224,4 +251,10 @@ void Chip8::clearScreen(void) {
     std::cout << "clearScreen called\n";
     std::memset(screen_buffer_, 0, sizeof(screen_buffer_));
     display_->clear();
+}
+
+void Chip8::returnFromSubroutine(void) {
+    reg_.PC = reg_.stack.top();
+    reg_.stack.pop();
+    --reg_.SP;
 }

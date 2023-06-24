@@ -5,6 +5,7 @@
 #include <vector>
 #include <exception>
 #include <memory>
+#include <stack>
 
 #include "IDisplay.hpp"
 
@@ -29,7 +30,10 @@ public:
 
     enum Instructions {
         kClearScreen = 0x00E0,
+        kReturn = 0x00EE,
         kJump = 0x1000,
+        kCall = 0x2000,
+        kSkipEqual = 0x3000,
         kSetVxReg = 0x6000,
         kAddValueToVxReg = 0x7000,
         kSetIndexRegI = 0xA000,
@@ -47,12 +51,16 @@ private:
     void buzzerOff(void);
     uint16_t fetchInstruction(void);
     void decodeInstruction(uint16_t opcode);
+    // Instructions
     void jump(uint16_t opcode);
+    void callSubroutine(uint16_t opcode);
+    void skipIfEqual(uint16_t opcode);
     void setVxRegister(uint16_t opcode);
     void addValueToVxRegister(uint16_t opcode);
     void setIndexRegister(uint16_t opcode);
     void displayDraw(uint16_t opcode);
     void clearScreen(void);
+    void returnFromSubroutine(void);
 
     // CHIP-8 Registers
     struct Register {
@@ -69,7 +77,7 @@ private:
         // Sound Timer
         uint8_t ST;
         // Stack region
-        uint16_t stack[16];
+        std::stack<uint16_t> stack;
     };
 
     // CHIP-8 memory is 4 KB
