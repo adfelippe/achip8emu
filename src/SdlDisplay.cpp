@@ -2,22 +2,11 @@
 #include <iostream>
 #include <memory>
 
-SdlDisplay::SdlDisplay() : window_(nullptr), renderer_(nullptr), display_width_(0), display_height_(0) {}
-
-SdlDisplay::~SdlDisplay() {
-    if (window_) {
-        SDL_DestroyWindow(window_);
-    }
-
-    if (renderer_) {
-        SDL_DestroyRenderer(renderer_);
-    }
-
-    SDL_Quit();
-}
-
-void SdlDisplay::initialize(uint32_t display_width, uint32_t display_height) {
-    if (!display_width || !display_height) {
+SdlDisplay::SdlDisplay(uint32_t display_width, uint32_t display_height) : 
+    display_width_(display_width), 
+    display_height_(display_height) {
+    
+    if (!display_width_ || !display_height_) {
         throw SdlDisplayException("Failed to initialize SDL: screen size invalid  (" + std::to_string(display_width_) + 
                                   ", " + std::to_string(display_height_) + ")");
     }
@@ -25,9 +14,6 @@ void SdlDisplay::initialize(uint32_t display_width, uint32_t display_height) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw SdlDisplayException("Failed to initialize SDL lib: " + std::string(SDL_GetError()));
     }
-
-    display_width_ = display_width;
-    display_height_ = display_height;
 
     window_ = SDL_CreateWindow("CHIP8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
                                display_width_ * kScaleFactor, display_height_ * kScaleFactor, 0);
@@ -39,6 +25,18 @@ void SdlDisplay::initialize(uint32_t display_width, uint32_t display_height) {
     if (!renderer_) {
         throw SdlDisplayException("Failed to create SDL renderer: " + std::string(SDL_GetError()));
     }
+}
+
+SdlDisplay::~SdlDisplay() {
+    if (window_) {
+        SDL_DestroyWindow(window_);
+    }
+
+    if (renderer_) {
+        SDL_DestroyRenderer(renderer_);
+    }
+
+    SDL_Quit();
 }
 
 void SdlDisplay::draw(uint32_t x_pos, uint32_t y_pos) {

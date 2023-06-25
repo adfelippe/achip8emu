@@ -6,7 +6,7 @@
 
 class SdlDisplay : public IDisplay {
 public:
-    SdlDisplay();
+    SdlDisplay(uint32_t display_width, uint32_t display_height);
     virtual ~SdlDisplay();
 
     class SdlDisplayException : public std::exception {
@@ -17,7 +17,6 @@ public:
         const std::string err_msg_;
     };
 
-    void initialize(uint32_t display_width, uint32_t display_height) override;
     void draw(uint32_t x_pos, uint32_t y_pos) override;
     void render(uint8_t *screen_buffer) override;
     void clear(void) override;
