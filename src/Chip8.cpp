@@ -70,49 +70,46 @@ void Chip8::load(const std::string &path) {
 
 void Chip8::run(void) {
     auto start_time = std::chrono::steady_clock::now();
+    auto start_time_debug = std::chrono::steady_clock::now();
 
     while (1) {
-        auto start_delay = std::chrono::steady_clock::now();
+        auto start_refresh_delay = std::chrono::steady_clock::now();
         auto opcode = fetchInstruction();
         decodeInstruction(opcode);
 
         if (std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start_time).count() > 5000) {
+                std::chrono::steady_clock::now() - start_time_debug).count() > 5000) {
             break;
         }
 
         // 60 Hz refresh rate
-        std::this_thread::sleep_until(start_delay + 17ms);
+        if (std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - start_time).count() > 16667) {
+            start_time = std::chrono::steady_clock::now();
+            runDelayTimer();
+            runSoundTimer();
+        }
+
+        // For now, we'll stick to 500 Hz CPU frequency.
+        // TODO: Tweak each instructions to take a more realistic time based on the original HW:
+        // https://jackson-s.me/2019/07/13/Chip-8-Instruction-Scheduling-and-Frequency.html
+        std::this_thread::sleep_until(start_refresh_delay + 2ms);
     }
 }
 
 void Chip8::runDelayTimer(void) {
-    static auto last_timestamp = std::chrono::steady_clock::now();
-
     if (reg_.DT) {
-        const auto elapsed_time = std::chrono::steady_clock::now() - last_timestamp;
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() >= kTimersDecrementRateMs) {
-            --reg_.DT;
-        }
+        --reg_.DT;
     }
-
-    last_timestamp = std::chrono::steady_clock::now();
 }
 
 void Chip8::runSoundTimer(void) {
-    static auto last_timestamp = std::chrono::steady_clock::now();
-
     if (reg_.ST) {
         buzzerOn();
-        const auto elapsed_time = std::chrono::steady_clock::now() - last_timestamp;
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count() >= kTimersDecrementRateMs) {
-            --reg_.ST;
-        }
+        --reg_.ST;
     } else {
         buzzerOff();
     }
-
-    last_timestamp = std::chrono::steady_clock::now();
 }
 
 void Chip8::buzzerOn(void) {}
