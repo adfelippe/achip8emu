@@ -62,6 +62,11 @@ void Chip8::load(const std::string &path) {
     // TODO: Add check to avoid a program larger than memory to cause overflow
     std::filesystem::path file_path = path;
     auto file_size = std::filesystem::file_size(file_path);
+
+    if (file_size > kMemorySize - kMemoryStartOffsetDefault) {
+        throw Chip8Exception("File too large: " + std::to_string(file_size) +  " bytes");
+    }
+
     reg_.PC = memory_start_offset_;
     f.read((char*)&memory_[memory_start_offset_], file_size);
     std::cout << file_size << " bytes loaded successfully\n";
@@ -86,6 +91,7 @@ void Chip8::run(void) {
         if (std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_time).count() > 16667) {
             start_time = std::chrono::steady_clock::now();
+            display_->render(screen_buffer_);
             runDelayTimer();
             runSoundTimer();
         }
@@ -237,8 +243,6 @@ void Chip8::displayDraw(uint8_t x, uint8_t y, uint8_t n) {
         }
           ++display_y_pos;
     }
-
-    display_->render(screen_buffer_);
 }
 
 void Chip8::clearScreen(void) {
