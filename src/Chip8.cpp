@@ -89,7 +89,7 @@ void Chip8::run(void) {
 
         // 60 Hz refresh rate
         if (std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::steady_clock::now() - start_time).count() > 16667) {
+                std::chrono::steady_clock::now() - start_time).count() > kCpuPeriodUs) {
             start_time = std::chrono::steady_clock::now();
             display_->render(screen_buffer_);
             runDelayTimer();

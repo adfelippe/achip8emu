@@ -84,8 +84,8 @@ private:
     static constexpr size_t kMemorySize = 4096;
     static constexpr size_t kMemoryStartOffsetDefault = 0x200;
     static constexpr uint8_t kSpritesMemLocation = 0x00;
-    // 60 Hz = 16.666667 ms (period)
-    static constexpr double kTimersDecrementRateMs = 16.666667F;
+    // 60 Hz = 16667 us (period)
+    static constexpr int64_t kCpuPeriodUs = 16667;
 
     Register reg_;
     uint8_t memory_[kMemorySize];
