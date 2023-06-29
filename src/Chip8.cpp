@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <iostream>
 #include <thread>
+#include <random>
 #include <SDL2/SDL.h>
 
 using namespace std::chrono_literals;
@@ -172,6 +173,15 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         case kVRegOperation:
             runVRegOperation(x, y, n);
             break;
+        case kSkipNotEqual:
+            skipNext(x, y);
+            break;
+        case kJumpToAddrPlusV0:
+            jumpToAddrPlusV0(nnn);
+            break;
+        case kSetRandom:
+            setRandomByteToVx(x, kk);
+            break;
         case kSetIndexRegI:
             setIndexRegister(nnn);
             break;
@@ -208,44 +218,6 @@ void Chip8::setVxRegister(uint8_t v_reg, uint8_t value) {
 
 void Chip8::addValueToVxRegister(uint8_t v_reg, uint8_t value) {
     reg_.V[v_reg] += value;
-}
-
-void Chip8::setIndexRegister(uint16_t value) {
-    reg_.I = value;
-}
-
-void Chip8::displayDraw(uint8_t x, uint8_t y, uint8_t n) {
-    uint8_t display_x_pos = reg_.V[x] % kDisplayWidth;
-    uint8_t display_y_pos = reg_.V[y] % kDisplayHeight;
-    auto start_x_pos = display_x_pos;
-    reg_.V[0xF] = 0x00;
-
-    // TODO: Rollover at the beginning if Vx or Vy is larger than screen size
-    // We update our screen buffer before actually drawing + rendering
-    for(uint32_t i = 0; i < n; ++i) {
-        if (display_y_pos >= kDisplayHeight) {
-            break;
-        }
-
-        display_x_pos = start_x_pos;
-        const auto &display_data = memory_[reg_.I + i];
-        for (int8_t j = 7; j >= 0; --j) {
-            if (display_x_pos >= kDisplayWidth) {
-                break;
-            }
-
-            const uint8_t &sprite_pixel = (display_data >> j) & 0x01;
-            // (Y position * display width) walks the pointer on the vertical line
-            auto *screen_buf_pixel = &screen_buffer_[display_x_pos + display_y_pos * kDisplayWidth];
-            if (sprite_pixel && *screen_buf_pixel) {
-                reg_.V[0xF] = 0x01;
-            }
-
-            *screen_buf_pixel ^= sprite_pixel;
-            ++display_x_pos;
-        }
-          ++display_y_pos;
-    }
 }
 
 void Chip8::clearScreen(void) {
@@ -305,5 +277,62 @@ void Chip8::runVRegOperation(uint8_t x, uint8_t y, uint8_t n) {
         }
         default:
             break;
+    }
+}
+
+void Chip8::skipNext(uint8_t x, uint8_t y) {
+    if (reg_.V[x] != reg_.V[y]) {
+        reg_.PC += 2;
+    }
+}
+
+
+void Chip8::setIndexRegister(uint16_t value) {
+    reg_.I = value;
+}
+
+void Chip8::jumpToAddrPlusV0(uint16_t address) {
+    reg_.PC = address + reg_.V[0x00];
+}
+
+void Chip8::setRandomByteToVx(uint8_t v_reg, uint8_t value) {
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist_0_255(0, 255);
+    uint8_t rnd_number = dist_0_255(rng);
+
+    reg_.V[v_reg] = rnd_number & value;
+}
+
+void Chip8::displayDraw(uint8_t x, uint8_t y, uint8_t n) {
+    uint8_t display_x_pos = reg_.V[x] % kDisplayWidth;
+    uint8_t display_y_pos = reg_.V[y] % kDisplayHeight;
+    auto start_x_pos = display_x_pos;
+    reg_.V[0xF] = 0x00;
+
+    // We update our screen buffer before actually rendering
+    for(uint32_t i = 0; i < n; ++i) {
+        if (display_y_pos >= kDisplayHeight) {
+            break;
+        }
+
+        display_x_pos = start_x_pos;
+        const auto &display_data = memory_[reg_.I + i];
+        for (int8_t j = 7; j >= 0; --j) {
+            if (display_x_pos >= kDisplayWidth) {
+                break;
+            }
+
+            const uint8_t &sprite_pixel = (display_data >> j) & 0x01;
+            // (Y position * display width) walks the pointer on the vertical line
+            auto *screen_buf_pixel = &screen_buffer_[display_x_pos + display_y_pos * kDisplayWidth];
+            if (sprite_pixel && *screen_buf_pixel) {
+                reg_.V[0xF] = 0x01;
+            }
+
+            *screen_buf_pixel ^= sprite_pixel;
+            ++display_x_pos;
+        }
+          ++display_y_pos;
     }
 }

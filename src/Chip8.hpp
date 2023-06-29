@@ -37,7 +37,10 @@ public:
         kSetVxReg = 0x6,
         kAddValueToVxReg = 0x7,
         kVRegOperation = 0x08,
+        kSkipNotEqual = 0x09,
         kSetIndexRegI = 0xA,
+        kJumpToAddrPlusV0 = 0xB,
+        kSetRandom = 0xC,
         kDisplayDraw = 0xD
     };
 
@@ -63,6 +66,9 @@ private:
     void clearScreen(void);
     void returnFromSubroutine(void);
     void runVRegOperation(uint8_t x, uint8_t y, uint8_t n);
+    void skipNext(uint8_t x, uint8_t y);
+    void jumpToAddrPlusV0(uint16_t address);
+    void setRandomByteToVx(uint8_t v_reg, uint8_t value);
 
     // CHIP-8 Registers
     struct Register {
