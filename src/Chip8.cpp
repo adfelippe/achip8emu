@@ -169,6 +169,9 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         case kAddValueToVxReg:
             addValueToVxRegister(x, kk);
             break;
+        case kVRegOperation:
+            runVRegOperation(x, y, n);
+            break;
         case kSetIndexRegI:
             setIndexRegister(nnn);
             break;
@@ -254,4 +257,53 @@ void Chip8::returnFromSubroutine(void) {
     reg_.PC = reg_.stack.top();
     reg_.stack.pop();
     --reg_.SP;
+}
+
+void Chip8::runVRegOperation(uint8_t x, uint8_t y, uint8_t n) {
+    switch (n) {
+        case 0x00: {
+            reg_.V[x] = reg_.V[y];
+            break;
+        }
+        case 0x01: {
+            reg_.V[x] |= reg_.V[y];
+            break;
+        }
+        case 0x02: {
+            reg_.V[x] &= reg_.V[y];
+            break;
+        }
+        case 0x03: {
+            reg_.V[x] ^= reg_.V[y];
+            break;
+        }
+        case 0x04: {
+            uint16_t result = static_cast<uint16_t>(reg_.V[x]) + static_cast<uint16_t>(reg_.V[y]);
+            reg_.V[x] =  static_cast<uint8_t>(result & 0x00FF);
+            reg_.V[0xF] = static_cast<uint8_t>((result >> 8) & 0x01);
+            break;
+        }
+        case 0x05: {
+            reg_.V[0xF] = (reg_.V[x] > reg_.V[y]);
+            reg_.V[x] -= reg_.V[y];
+            break;
+        }
+        case 0x06: {
+            reg_.V[0xF] = reg_.V[x] & 0x01;
+            reg_.V[x] = reg_.V[x] >> 1;
+            break;
+        }
+        case 0x07: {
+            reg_.V[0xF] = (reg_.V[y] > reg_.V[x]);
+            reg_.V[x] = reg_.V[y] - reg_.V[x];
+            break;
+        }
+        case 0x0E: {
+            reg_.V[0xF] = reg_.V[x] & 0x80;
+            reg_.V[x] = reg_.V[x] << 1;
+            break;
+        }
+        default:
+            break;
+    }
 }

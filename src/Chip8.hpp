@@ -28,7 +28,7 @@ public:
     void run(void);
     static size_t displaySize(void);
 
-    enum Instructions {
+    enum Opcodes {
         kClearScreen = 0x00E0,
         kReturn = 0x00EE,
         kJump = 0x1,
@@ -36,6 +36,7 @@ public:
         kSkipEqual = 0x3,
         kSetVxReg = 0x6,
         kAddValueToVxReg = 0x7,
+        kVRegOperation = 0x08,
         kSetIndexRegI = 0xA,
         kDisplayDraw = 0xD
     };
@@ -61,6 +62,7 @@ private:
     void displayDraw(uint8_t x, uint8_t y, uint8_t n);
     void clearScreen(void);
     void returnFromSubroutine(void);
+    void runVRegOperation(uint8_t x, uint8_t y, uint8_t n);
 
     // CHIP-8 Registers
     struct Register {
