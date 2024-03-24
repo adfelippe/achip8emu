@@ -41,7 +41,8 @@ public:
         kSetIndexRegI = 0xA,
         kJumpToAddrPlusV0 = 0xB,
         kSetRandom = 0xC,
-        kDisplayDraw = 0xD
+        kDisplayDraw = 0xD,
+        kSkipNetIfKey = 0xE
     };
 
     // CHIP-8 display size if 64 x 32 pixels
@@ -69,6 +70,8 @@ private:
     void skipNext(uint8_t x, uint8_t y);
     void jumpToAddrPlusV0(uint16_t address);
     void setRandomByteToVx(uint8_t v_reg, uint8_t value);
+    void skipNetIfKey(uint8_t x, uint8_t y, uint8_t n);
+    bool keyIsPressed(uint8_t x);
 
     // CHIP-8 Registers
     struct Register {

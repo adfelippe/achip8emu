@@ -188,6 +188,8 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         case kDisplayDraw:
             displayDraw(x, y, n);
             break;
+        case kSkipNetIfKey:
+            skipNetIfKey(x, y, n);
         default:
             std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
                 << opcode << "\n";
@@ -335,4 +337,18 @@ void Chip8::displayDraw(uint8_t x, uint8_t y, uint8_t n) {
         }
           ++display_y_pos;
     }
+}
+
+void Chip8::skipNetIfKey(uint8_t x, uint8_t y, uint8_t n) {
+    // SKP Vx
+    if (y == 0x09 && n == 0x0E && keyIsPressed(x)) {
+        reg_.PC += 2;
+    // SKNP Vx
+    } else if (y == 0x0A && n == 0x01 && !keyIsPressed(x)) {
+        reg_.PC += 2;
+    }
+}
+
+bool Chip8::keyIsPressed(uint8_t x) {
+    return false;
 }
