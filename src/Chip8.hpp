@@ -42,7 +42,18 @@ public:
         kJumpToAddrPlusV0 = 0x0B,
         kSetRandom = 0x0C,
         kDisplayDraw = 0x0D,
-        kSkipNetIfKey = 0x0E
+        kSkipNetIfKey = 0x0E,
+        kMisc = 0x0F,
+        // Sub-opcodes for opcodes started in 0x0F
+        kMiscDelayTimerValue = 0x07,
+        kMiscWaitForKey = 0x0A,
+        kMiscSetDelayTimer = 0x15,
+        kMiscSetSoundTimer = 0x18,
+        kMiscAddToIndex = 0x1E,
+        kMiscFontChar = 0x29,
+        kMiscStoreBcd = 0x33,
+        kMiscStoreMemory = 0x55,
+        kMiscLoadMemory = 0x65
     };
 
     // CHIP-8 display size if 64 x 32 pixels
@@ -71,6 +82,7 @@ private:
     void jumpToAddrPlusV0(uint16_t address);
     void setRandomByteToVx(uint8_t v_reg, uint8_t value);
     void skipNetIfKey(uint8_t x, uint8_t y, uint8_t n);
+    void decodeMisc(uint8_t x, uint8_t y, uint8_t n);
     bool keyIsPressed(uint8_t x);
 
     // CHIP-8 Registers

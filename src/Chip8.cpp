@@ -190,6 +190,8 @@ void Chip8::decodeInstruction(uint16_t opcode) {
             break;
         case kSkipNetIfKey:
             skipNetIfKey(x, y, n);
+        case kMisc:
+            decodeMisc(x, y, n);
         default:
             std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
                 << opcode << "\n";
@@ -346,6 +348,38 @@ void Chip8::skipNetIfKey(uint8_t x, uint8_t y, uint8_t n) {
     // SKNP Vx
     } else if (y == 0x0A && n == 0x01 && !keyIsPressed(x)) {
         reg_.PC += 2;
+    }
+}
+
+void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
+    uint16_t subcode = (static_cast<uint16_t>(y) << 8) + static_cast<uint16_t>(n);
+
+    switch (subcode) {
+        case kMiscDelayTimerValue:
+            reg_.V[x] = reg_.DT;
+            break;
+        case kMiscWaitForKey:
+            break;
+        case kMiscSetDelayTimer:
+            reg_.DT = reg_.V[x];
+            break;
+        case kMiscSetSoundTimer:
+            reg_.ST = reg_.V[x];
+            break;
+        case kMiscAddToIndex:
+            reg_.I += reg_.V[x];
+            break;
+        case kMiscFontChar:
+            reg_.I = memory_[reg_.V[x] * 5];
+            break;
+        case kMiscStoreBcd:
+            break;
+        case kMiscStoreMemory:
+            break;
+        case kMiscLoadMemory:
+            break;
+        default:
+            break;
     }
 }
 
