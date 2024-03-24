@@ -31,18 +31,18 @@ public:
     enum Opcodes {
         kClearScreen = 0x00E0,
         kReturn = 0x00EE,
-        kJump = 0x1,
-        kCall = 0x2,
-        kSkipEqual = 0x3,
-        kSetVxReg = 0x6,
-        kAddValueToVxReg = 0x7,
+        kJump = 0x01,
+        kCall = 0x02,
+        kSkipEqual = 0x03,
+        kSetVxReg = 0x06,
+        kAddValueToVxReg = 0x07,
         kVRegOperation = 0x08,
         kSkipNotEqual = 0x09,
-        kSetIndexRegI = 0xA,
-        kJumpToAddrPlusV0 = 0xB,
-        kSetRandom = 0xC,
-        kDisplayDraw = 0xD,
-        kSkipNetIfKey = 0xE
+        kSetIndexRegI = 0x0A,
+        kJumpToAddrPlusV0 = 0x0B,
+        kSetRandom = 0x0C,
+        kDisplayDraw = 0x0D,
+        kSkipNetIfKey = 0x0E
     };
 
     // CHIP-8 display size if 64 x 32 pixels
