@@ -56,6 +56,16 @@ public:
         kMiscLoadMemory = 0x65
     };
 
+    struct Key {
+        enum class State {
+            kPressed = 0x01,
+            kReleased = 0x00
+        };
+
+        uint8_t key;
+        State state;
+    };
+
     // CHIP-8 display size if 64 x 32 pixels
     static constexpr size_t kDisplayWidth = 64;
     static constexpr size_t kDisplayHeight = 32;
@@ -84,6 +94,7 @@ private:
     void skipNetIfKey(uint8_t x, uint8_t y, uint8_t n);
     void decodeMisc(uint8_t x, uint8_t y, uint8_t n);
     bool keyIsPressed(uint8_t x);
+    Chip8::Key getKey(void);
 
     // CHIP-8 Registers
     struct Register {

@@ -190,8 +190,10 @@ void Chip8::decodeInstruction(uint16_t opcode) {
             break;
         case kSkipNetIfKey:
             skipNetIfKey(x, y, n);
+            break;
         case kMisc:
             decodeMisc(x, y, n);
+            break;
         default:
             std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
                 << opcode << "\n";
@@ -358,7 +360,14 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
         case kMiscDelayTimerValue:
             reg_.V[x] = reg_.DT;
             break;
-        case kMiscWaitForKey:
+        case kMiscWaitForKey: {
+            auto key = getKey();
+            if (key.state == Key::State::kReleased) {
+                reg_.PC -= 2;
+            } else {
+                reg_.V[x] = key.key;
+            }
+        }
             break;
         case kMiscSetDelayTimer:
             reg_.DT = reg_.V[x];
@@ -373,10 +382,19 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
             reg_.I = memory_[reg_.V[x] * 5];
             break;
         case kMiscStoreBcd:
+            memory_[reg_.I] = reg_.V[x] / 100;
+            memory_[reg_.I + 1] = (reg_.V[x] / 10) % 10;
+            memory_[reg_.I + 2] = reg_.V[x] % 10;
             break;
         case kMiscStoreMemory:
+            for (uint8_t i = 0; i <= x; ++i) {
+                memory_[reg_.I + i] = reg_.V[i];
+            }
             break;
         case kMiscLoadMemory:
+            for (uint8_t i = 0; i <= x; ++i) {
+                reg_.V[i] = memory_[reg_.I + i];
+            }
             break;
         default:
             break;
@@ -384,5 +402,16 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
 }
 
 bool Chip8::keyIsPressed(uint8_t x) {
+    auto key = getKey();
+
+    if (key.state == Key::State::kPressed && key.key == reg_.V[x]) {
+        return true;
+    }
+
     return false;
+}
+
+Chip8::Key Chip8::getKey(void) {
+    // TODO: to be implemented
+    return {0, Key::State::kReleased};
 }
