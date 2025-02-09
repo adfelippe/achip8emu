@@ -1,6 +1,7 @@
 #include "Chip8.hpp"
 #include <iostream>
 #include "SdlDisplay.hpp"
+#include "Keyboard.hpp"
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -11,7 +12,8 @@ int main(int argc, char **argv) {
     }
     
     std::shared_ptr<IDisplay> sdl_display = std::make_shared<SdlDisplay>(Chip8::kDisplayWidth, Chip8::kDisplayHeight);
-    auto chip8 = Chip8(sdl_display);
+    std::shared_ptr<IKeyboard> keyboard = std::make_shared<Keyboard>();
+    auto chip8 = Chip8(sdl_display, keyboard);
     try {
         chip8.load(argv[1]);
     } catch (const std::exception &err) {

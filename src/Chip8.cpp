@@ -12,9 +12,29 @@
 
 using namespace std::chrono_literals;
 
-Chip8::Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display) : 
+static const std::map<char, uint8_t> keyboardToChip8Map = {
+    {'1', 0x01},
+    {'2', 0x02},
+    {'3', 0x03},
+    {'4', 0x0C},
+    {'Q', 0x04},
+    {'W', 0x05},
+    {'E', 0x06},
+    {'R', 0x0D},
+    {'A', 0x07},
+    {'S', 0x08},
+    {'D', 0x09},
+    {'F', 0x0E},
+    {'Z', 0x0A},
+    {'X', 0x00},
+    {'C', 0x0B},
+    {'V', 0x0F}
+};
+
+Chip8::Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display, const std::shared_ptr<IKeyboard> &keyboard) : 
     memory_start_offset_(memory_start_offset),
-    display_(display) {
+    display_(display),
+    keyboard_(keyboard) {
     std::memset(memory_, 0, kMemorySize * sizeof(uint8_t));
     /*
      * Hex sprites (0 - F). Programs may use these sprites as their font.
@@ -48,7 +68,8 @@ const uint8_t hex_sprites[] = {0xF0, 0x90, 0x90, 0x90, 0xF0,    // 0
     reg_.ST = 0;
 }
 
-Chip8::Chip8(const std::shared_ptr<IDisplay> &display) : Chip8(kMemoryStartOffsetDefault, display) {}
+Chip8::Chip8(const std::shared_ptr<IDisplay> &display, const std::shared_ptr<IKeyboard> &keyboard) : 
+    Chip8(kMemoryStartOffsetDefault, display, keyboard) {}
 
 void Chip8::load(const std::string &path) {
     std::cout << "Loading " << path << "\n";
@@ -198,6 +219,12 @@ void Chip8::decodeInstruction(uint16_t opcode) {
             std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
                 << opcode << "\n";
             break;
+    }
+
+    uint8_t key;
+    bool isPressed = getKey(&key);
+    if (isPressed) {
+        std::cout << "KeyValue: " << key << std::endl;
     }
 }
 
@@ -361,11 +388,12 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
             reg_.V[x] = reg_.DT;
             break;
         case kMiscWaitForKey: {
-            auto key = getKey();
-            if (key.state == Key::State::kReleased) {
+            uint8_t keyValue = 0xFF;
+            auto isPressed = getKey(&keyValue);
+            if (!isPressed) {
                 reg_.PC -= 2;
             } else {
-                reg_.V[x] = key.key;
+                reg_.V[x] = keyValue;
             }
         }
             break;
@@ -402,16 +430,40 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
 }
 
 bool Chip8::keyIsPressed(uint8_t x) {
-    auto key = getKey();
+    auto key = keyboard_->getKey();
 
-    if (key.state == Key::State::kPressed && key.key == reg_.V[x]) {
+    if (key.state == IKeyboard::Key::State::kReleased) {
+        return false;
+    }
+
+    if (isKeyChip8Valid(key.value) && key.value == reg_.V[x]) {
         return true;
     }
 
     return false;
 }
 
-Chip8::Key Chip8::getKey(void) {
-    // TODO: to be implemented
-    return {0, Key::State::kReleased};
+bool Chip8::isKeyChip8Valid(char value) {
+    uint8_t chip8Key = convertKeyboardToChip8(value);
+    return (chip8Key >= 0x00 && chip8Key <= 0x0F);
 }
+
+uint8_t Chip8::convertKeyboardToChip8(char value) {
+    if (keyboardToChip8Map.count(value) > 0) {
+        return keyboardToChip8Map.at(value);
+    }
+
+    return 0xFF;
+}
+
+bool Chip8::getKey(uint8_t *keyValue) {
+    auto key = keyboard_->getKey();
+
+    if (key.state == IKeyboard::Key::State::kReleased || !isKeyChip8Valid(key.value)) {
+        return false;
+    }
+
+    *keyValue = convertKeyboardToChip8(key.value);
+    return true;
+}
+

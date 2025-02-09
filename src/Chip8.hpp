@@ -6,8 +6,10 @@
 #include <exception>
 #include <memory>
 #include <stack>
+#include <map>
 
 #include "IDisplay.hpp"
+#include "IKeyboard.hpp"
 
 class Chip8 {
 public:
@@ -19,9 +21,9 @@ public:
         const std::string err_msg_;
     };
 
-    Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display);
+    Chip8(size_t memory_start_offset, const std::shared_ptr<IDisplay> &display, const std::shared_ptr<IKeyboard> &keyboard);
     // Default memory start offset used (0x200)
-    Chip8(const std::shared_ptr<IDisplay> &display);
+    Chip8(const std::shared_ptr<IDisplay> &display, const std::shared_ptr<IKeyboard> &keyboard);
     virtual ~Chip8() {}
 
     void load(const std::string &path);
@@ -56,16 +58,6 @@ public:
         kMiscLoadMemory = 0x65
     };
 
-    struct Key {
-        enum class State {
-            kPressed = 0x01,
-            kReleased = 0x00
-        };
-
-        uint8_t key;
-        State state;
-    };
-
     // CHIP-8 display size if 64 x 32 pixels
     static constexpr size_t kDisplayWidth = 64;
     static constexpr size_t kDisplayHeight = 32;
@@ -94,7 +86,9 @@ private:
     void skipNetIfKey(uint8_t x, uint8_t y, uint8_t n);
     void decodeMisc(uint8_t x, uint8_t y, uint8_t n);
     bool keyIsPressed(uint8_t x);
-    Chip8::Key getKey(void);
+    bool getKey(uint8_t *keyValue);
+    bool isKeyChip8Valid(char value);
+    uint8_t convertKeyboardToChip8(char value);
 
     // CHIP-8 Registers
     struct Register {
@@ -126,5 +120,6 @@ private:
     uint8_t screen_buffer_[kDisplayWidth * kDisplayHeight];
     size_t memory_start_offset_;
     std::shared_ptr<IDisplay> display_;
+    const std::shared_ptr<IKeyboard> keyboard_;
 };
         
