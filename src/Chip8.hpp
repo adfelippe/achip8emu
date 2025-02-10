@@ -35,11 +35,13 @@ public:
         kReturn = 0x00EE,
         kJump = 0x01,
         kCall = 0x02,
-        kSkipEqual = 0x03,
+        kSkipIfEqual = 0x03,
+        kSkipIfNotEqual = 0x04,
+        kSkipIfVxVyEqual = 0x05,
         kSetVxReg = 0x06,
         kAddValueToVxReg = 0x07,
         kVRegOperation = 0x08,
-        kSkipNotEqual = 0x09,
+        kSkipIfVxVyNotEqual = 0x09,
         kSetIndexRegI = 0x0A,
         kJumpToAddrPlusV0 = 0x0B,
         kSetRandom = 0x0C,
@@ -73,6 +75,7 @@ private:
     void jump(uint16_t address);
     void callSubroutine(uint16_t address);
     void skipIfEqual(uint8_t v_reg, uint8_t value);
+    void skipIfNotEqual(uint8_t v_reg, uint8_t value);
     void setVxRegister(uint8_t v_reg, uint8_t value);
     void addValueToVxRegister(uint8_t v_reg, uint8_t value);
     void setIndexRegister(uint16_t value);
@@ -80,11 +83,12 @@ private:
     void clearScreen(void);
     void returnFromSubroutine(void);
     void runVRegOperation(uint8_t x, uint8_t y, uint8_t n);
-    void skipNext(uint8_t x, uint8_t y);
+    void skipNextIfVxVyEqual(uint8_t x, uint8_t y);
+    void skipNextIfVxVyNotEqual(uint8_t x, uint8_t y);
     void jumpToAddrPlusV0(uint16_t address);
     void setRandomByteToVx(uint8_t v_reg, uint8_t value);
     void skipNetIfKey(uint8_t x, uint8_t y, uint8_t n);
-    void decodeMisc(uint8_t x, uint8_t y, uint8_t n);
+    void decodeMisc(uint8_t x, uint8_t kk);
     bool keyIsPressed(uint8_t x);
     bool getKey(uint8_t *keyValue);
     bool isKeyChip8Valid(char value);
