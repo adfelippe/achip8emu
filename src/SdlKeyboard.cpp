@@ -1,19 +1,54 @@
+#include <iostream>
 #include "SdlKeyboard.hpp"
 
+SdlKeyboard::SdlKeyboard() : 
+    runProccessEventsThread_(true), 
+    quitClicked_(false),
+    eventsThread_(std::thread(&SdlKeyboard::processEvents, this)) {}
+
+SdlKeyboard::~SdlKeyboard() {
+    if (eventsThread_.joinable()) {
+        eventsThread_.join();
+    }
+}
+
 IKeyboard::Key SdlKeyboard::getKey(void) {
-    auto key = IKeyboard::Key();
-    SDL_Event event;
-
-    if (SDL_PollEvent(&event) && event.type == SDL_KEYDOWN) {
-        auto scancode = event.key.keysym.scancode;
-        key.state = Key::State::kPressed;
-        key.value = convertScanCodeToCharValue(scancode);
-
-    } else {
-        key.state = Key::State::kReleased;
+    if (!keysQueue_.empty()) {
+        auto key = keysQueue_.front();
+        keysQueue_.pop();
+        return key;
     }
 
-    return key;
+    auto defaultKey = IKeyboard::Key();
+    defaultKey.state = Key::State::kReleased;
+    
+    return defaultKey;
+}
+
+bool SdlKeyboard::quitClicked(void) {
+    return quitClicked_;
+}
+
+// This is a naive implementation and it assumes the SDL library has already 
+// been initialized somewhere else.
+void SdlKeyboard::processEvents(void) {
+    SDL_Event event;
+
+    while (runProccessEventsThread_ && !quitClicked_) {
+        auto key = IKeyboard::Key();
+        key.state = Key::State::kReleased;
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_KEYDOWN) {
+                auto scancode = event.key.keysym.scancode;
+                key.state = Key::State::kPressed;
+                key.value = convertScanCodeToCharValue(scancode);
+                keysQueue_.push(key);
+            } else if (event.type == SDL_QUIT) {
+                quitClicked_ = true;
+            }
+        }
+    }
 }
 
 char SdlKeyboard::convertScanCodeToCharValue(SDL_Scancode scancode) {
