@@ -176,8 +176,14 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         case kCall:
             callSubroutine(nnn);
             break;
-        case kSkipEqual:
+        case kSkipIfEqual:
             skipIfEqual(x, kk);
+            break;
+        case kSkipIfNotEqual:
+            skipIfNotEqual(x, kk);
+            break;
+        case kSkipIfVxVyEqual:
+            skipNextIfVxVyEqual(x, y);
             break;
         case kSetVxReg:
             setVxRegister(x, kk);
@@ -188,8 +194,8 @@ void Chip8::decodeInstruction(uint16_t opcode) {
         case kVRegOperation:
             runVRegOperation(x, y, n);
             break;
-        case kSkipNotEqual:
-            skipNext(x, y);
+        case kSkipIfVxVyNotEqual:
+            skipNextIfVxVyNotEqual(x, y);
             break;
         case kJumpToAddrPlusV0:
             jumpToAddrPlusV0(nnn);
@@ -207,7 +213,7 @@ void Chip8::decodeInstruction(uint16_t opcode) {
             skipNetIfKey(x, y, n);
             break;
         case kMisc:
-            decodeMisc(x, y, n);
+            decodeMisc(x, kk);
             break;
         default:
             std::cerr << "UNKNOWN OPCODE = " << std::setfill('0') << std::setw(4) << std::hex << std::uppercase 
@@ -228,6 +234,12 @@ void Chip8::callSubroutine(uint16_t address) {
 
 void Chip8::skipIfEqual(uint8_t v_reg, uint8_t value) {
     if (reg_.V[v_reg] == value) {
+        reg_.PC += 2;
+    }
+}
+
+void Chip8::skipIfNotEqual(uint8_t v_reg, uint8_t value) {
+    if (reg_.V[v_reg] != value) {
         reg_.PC += 2;
     }
 }
@@ -301,12 +313,17 @@ void Chip8::runVRegOperation(uint8_t x, uint8_t y, uint8_t n) {
     }
 }
 
-void Chip8::skipNext(uint8_t x, uint8_t y) {
+void Chip8::skipNextIfVxVyNotEqual(uint8_t x, uint8_t y) {
     if (reg_.V[x] != reg_.V[y]) {
         reg_.PC += 2;
     }
 }
 
+void Chip8::skipNextIfVxVyEqual(uint8_t x, uint8_t y) {
+    if (reg_.V[x] == reg_.V[y]) {
+        reg_.PC += 2;
+    }
+}
 
 void Chip8::setIndexRegister(uint16_t value) {
     reg_.I = value;
@@ -368,10 +385,8 @@ void Chip8::skipNetIfKey(uint8_t x, uint8_t y, uint8_t n) {
     }
 }
 
-void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
-    uint16_t subcode = (static_cast<uint16_t>(y) << 8) + static_cast<uint16_t>(n);
-
-    switch (subcode) {
+void Chip8::decodeMisc(uint8_t x, uint8_t kk) {
+    switch (kk) {
         case kMiscDelayTimerValue:
             reg_.V[x] = reg_.DT;
             break;
@@ -381,6 +396,7 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
             if (!isPressed) {
                 reg_.PC -= 2;
             } else {
+                std::cout << "KEY PRESSED: " << std::to_string(keyValue) << "\n";
                 reg_.V[x] = keyValue;
             }
         }
@@ -397,10 +413,14 @@ void Chip8::decodeMisc(uint8_t x, uint8_t y, uint8_t n) {
         case kMiscFontChar:
             reg_.I = memory_[reg_.V[x] * 5];
             break;
-        case kMiscStoreBcd:
-            memory_[reg_.I] = reg_.V[x] / 100;
-            memory_[reg_.I + 1] = (reg_.V[x] / 10) % 10;
-            memory_[reg_.I + 2] = reg_.V[x] % 10;
+        case kMiscStoreBcd: {
+            uint8_t value = reg_.V[x];
+            memory_[reg_.I + 2] = value % 10;
+            value /= 10;
+            memory_[reg_.I + 1] = value % 10;
+            value /= 10;
+            memory_[reg_.I] = value % 10;
+        }
             break;
         case kMiscStoreMemory:
             for (uint8_t i = 0; i <= x; ++i) {
