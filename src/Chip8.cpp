@@ -97,17 +97,11 @@ void Chip8::load(const std::string &path) {
 
 void Chip8::run(void) {
     auto start_time = std::chrono::steady_clock::now();
-    auto start_time_debug = std::chrono::steady_clock::now();
 
     while (1) {
         auto start_refresh_delay = std::chrono::steady_clock::now();
         auto opcode = fetchInstruction();
         decodeInstruction(opcode);
-
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start_time_debug).count() > 5000) {
-            break;
-        }
 
         // 60 Hz refresh rate
         if (std::chrono::duration_cast<std::chrono::microseconds>(
@@ -168,12 +162,12 @@ void Chip8::decodeInstruction(uint16_t opcode) {
     uint16_t nnn = opcode & 0x0FFF;
     uint8_t n = static_cast<uint8_t>(opcode & 0x000F);
 
-    std::cout << "OPCODE [" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << opcode << "]";
+    /*std::cout << "OPCODE [" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << opcode << "]";
     std::cout << ", x = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(x);
     std::cout << ", y = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(y);
     std::cout << ", kk = " << std::setfill('0') << std::setw(2) << std::hex << std::uppercase << int(kk);
     std::cout << ", nnn = " << std::setfill('0') << std::setw(3) << std::hex << std::uppercase << int(nnn);
-    std::cout << ", n = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(n) << "\n";
+    std::cout << ", n = " << std::setfill('0') << std::setw(1) << std::hex << std::uppercase << int(n) << "\n";*/
 
     switch ((opcode >> 12) & 0x000F) {
         case kJump:
