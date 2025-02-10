@@ -16,4 +16,5 @@ public:
     };
 
     virtual Key getKey(void) = 0;
+    virtual bool quitClicked(void) = 0;
 };
