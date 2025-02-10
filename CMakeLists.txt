@@ -20,7 +20,7 @@ add_executable(${CMAKE_PROJECT_NAME}
                ../src/main.cpp
                ../src/Chip8.cpp
                ../src/SdlDisplay.cpp
-               ../src/Keyboard.cpp)
+               ../src/SdlKeyboard.cpp)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 
                       ${SDL2_LIBRARIES}

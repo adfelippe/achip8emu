@@ -220,12 +220,6 @@ void Chip8::decodeInstruction(uint16_t opcode) {
                 << opcode << "\n";
             break;
     }
-
-    uint8_t key;
-    bool isPressed = getKey(&key);
-    if (isPressed) {
-        std::cout << "KeyValue: " << key << std::endl;
-    }
 }
 
 void Chip8::jump(uint16_t address) {
@@ -449,8 +443,10 @@ bool Chip8::isKeyChip8Valid(char value) {
 }
 
 uint8_t Chip8::convertKeyboardToChip8(char value) {
-    if (keyboardToChip8Map.count(value) > 0) {
-        return keyboardToChip8Map.at(value);
+    auto upperChar = static_cast<char>(std::toupper(static_cast<unsigned char>(value)));
+
+    if (keyboardToChip8Map.count(upperChar) > 0) {
+        return keyboardToChip8Map.at(upperChar);
     }
 
     return 0xFF;
