@@ -98,7 +98,7 @@ void Chip8::load(const std::string &path) {
 void Chip8::run(void) {
     auto start_time = std::chrono::steady_clock::now();
 
-    while (1) {
+    while (!keyboard_->quitClicked()) {
         auto start_refresh_delay = std::chrono::steady_clock::now();
         auto opcode = fetchInstruction();
         decodeInstruction(opcode);
