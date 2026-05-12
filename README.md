@@ -2,6 +2,8 @@
 
 Testing the changes to commit.
 
+# HELLO ReDI!
+
 In order to deep-dive into emulators, I decided to start with the so-called simplest emulator project, therefore a Chip-8 Emulator.
 
 ## Dependencies:
